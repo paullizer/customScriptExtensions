@@ -1,0 +1,1 @@
+& "c:\windows\system32\sysprep\sysprep.exe" /generalize /shutdown /mode:vm /quiet
