@@ -328,7 +328,7 @@ Param(
     try {
         $localVersion = ("c:\temp\Git-" + ((($versions.Matches.Value -split ">")[1]) -split ".windows")[0].replace("v","") + "-64-bit.exe")
         Invoke-WebRequest -Uri $latestVersion -OutFile $localVersion -UseBasicParsing
-        $localVersion | out-file $log -Append 
+        ("Downloaded " + $localVersion) | out-file $log -Append 
         start-sleep -s 5
     }
     catch {
