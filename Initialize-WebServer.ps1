@@ -7,11 +7,12 @@
         v1.0 - Initial
         v1.1 - Added support for additional TLS and SSL versions
         v1.2 - Added Path reload
+        v1.3 - Using incidents instead of download
 .NOTES  
     File Name       :   Initialize-WebServer.ps1  
     Author          :   Paul Lizer, paullizer@microsoft.com
     Prerequisite    :   PowerShell V5, Azure PowerShell 5.6.0 or greater
-    Version         :   1.2 (2023 02 09)     
+    Version         :   1.3 (2023 02 09)     
 .LINK  
     https://github.com/paullizer/customScriptExtensions
 .EXAMPLE  
@@ -29,14 +30,14 @@ Param(
 )
 
     $userSecurePassword = $userPassword | ConvertTo-SecureString -AsPlainText -Force
-    Clear-Variable -Name $userPassword -Force
+    Clear-Variable -Name userPassword -Force
     $userUsername = "user"
     $userCredentials = New-Object System.Management.Automation.PSCredential -ArgumentList $userUsername, $userSecurePassword
 
     $hostFileShare = "dvm-tma-00133.microsoftdatabox.com"
 
     $uploadFolder = "upload"
-    $downloadFolder = "download"
+    $downloadFolder = "incidents"
 
     $log = "c:\temp\log.txt"
 
@@ -396,12 +397,12 @@ Param(
 
 # Create sym link to connect upload mapped drive to C:\inetpub\wwwroot\upload
     try {
-        New-Item -ItemType SymbolicLink -Path ("C:\inetpub\wwwroot\" + $uploadFolder) -Target s:\
-        ("Created symbolic link from C:\inetpub\wwwroot\" + $uploadFolder + " to s:\ drive") | out-file $log -Append 
+        New-Item -ItemType SymbolicLink -Path ("C:\inetpub\wwwroot\upload") -Target s:\
+        ("Created symbolic link from C:\inetpub\wwwroot\upload to s:\ drive") | out-file $log -Append 
         start-sleep -s 5
     }
     catch {
-        ("Failed to create symbolic link from C:\inetpub\wwwroot\" + $uploadFolder + " to s:\ drive") | out-file $log -Append 
+        ("Failed to create symbolic link from C:\inetpub\wwwroot\upload to s:\ drive") | out-file $log -Append 
         $_ | out-file $log -Append 
     }
 
@@ -418,12 +419,12 @@ Param(
 
 # Create sym link to connect download mapped drive to C:\inetpub\wwwroot\upload
     try {
-        New-Item -ItemType SymbolicLink -Path ("C:\inetpub\wwwroot\" + $downloadFolder) -Target t:\
-        ("Created symbolic link from C:\inetpub\wwwroot\" + $downloadFolder + " to t:\ drive") | out-file $log -Append 
+        New-Item -ItemType SymbolicLink -Path ("C:\inetpub\wwwroot\download") -Target t:\
+        ("Created symbolic link from C:\inetpub\wwwroot\download to t:\ drive") | out-file $log -Append 
         start-sleep -s 5
     }
     catch {
-        ("Failed to create symbolic link from C:\inetpub\wwwroot\" + $downloadFolder + " to t:\ drive") | out-file $log -Append 
+        ("Failed to create symbolic link from C:\inetpub\wwwroot\download to t:\ drive") | out-file $log -Append 
         $_ | out-file $log -Append 
     }
 
