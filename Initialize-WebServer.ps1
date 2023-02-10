@@ -62,6 +62,16 @@ Param(
     $projectFile = "project.txt"
     $statusFile = "status.xml"
 
+
+    $statusInput = '<?xml version="1.0" encoding="UTF-8"?>
+    <status>
+        <service>
+            <name>Azure Stack Edge Hardware Status</name>
+            <status>Green</status>
+            <updated>2/10/2023 10:00 am</updated>
+        </service>
+    </status>'
+
     [Net.ServicePointManager]::SecurityProtocol = "Tls, Tls11, Tls12, Ssl3"
 
 <#***************************************************
@@ -81,7 +91,7 @@ Param(
 
 # Save the password so the drive will persist on reboot
     try {
-        cmd.exe /C "cmdkey /add:$hostFileShare /user:$userUsername /pass:$userPassword"
+        cmd.exe /C "cmdkey /add:$hostFileShare /user:$userUsername /pass:$userPassword" | out-file $log -Append 
         "Saved password so the drive will persist on reboot" | out-file $log -Append 
         start-sleep -s 5
     }
