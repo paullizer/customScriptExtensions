@@ -577,3 +577,7 @@ try {
 catch {
     $_ | out-file $log -Append 
 }
+
+<#***************************************************
+Create scheduled task and script to monitor service
+***************************************************#>
