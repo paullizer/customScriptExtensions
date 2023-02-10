@@ -60,6 +60,7 @@ Param(
     $downloadFolder = "incidents"
 
     $projectFile = "project.txt"
+    $statusFile = "status.xml"
 
     [Net.ServicePointManager]::SecurityProtocol = "Tls, Tls11, Tls12, Ssl3"
 
@@ -536,7 +537,7 @@ Param(
     }
 
 # Get name of most recently edited subfolder witin the download folder and update project file to use
-    $downloadFolderList = Get-ChildItem -Directory -Path t:\
+    $downloadFolderList = Get-ChildItem -Directory -Path ("\\" + $hostFileShare + "\" + $downloadFolder)
     $downloadFolder = $downloadFolderList | Sort-Object -Property LastWriteTime
     ("download/" + $downloadFolder[1].name) | Out-File ("C:\inetpub\wwwroot\" + $projectFile) -Encoding ascii
 
