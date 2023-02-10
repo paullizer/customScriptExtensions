@@ -21,7 +21,7 @@
 #>
 
 <#***************************************************
-        Install IIS and Update Windows Firewall
+                    Parameters
 ***************************************************#>
 
 Param(
@@ -29,9 +29,12 @@ Param(
         [string]$userPassword
 )
 
-    $log = "c:\temp\log.txt"
+<#***************************************************
+                    Create Log File
+***************************************************#>
 
 # Create temp folder
+    $log = "c:\temp\log.txt"
     $temp = Get-Item "c:\temp" -ErrorAction SilentlyContinue
     if (!$temp) {
         try {
@@ -42,7 +45,11 @@ Param(
             $_
         }
     }
-    
+
+<#***************************************************
+                    Variables
+***************************************************#>
+
     $userSecurePassword = $userPassword | ConvertTo-SecureString -AsPlainText -Force
     $userUsername = "user"
     $userCredentials = New-Object System.Management.Automation.PSCredential -ArgumentList $userUsername, $userSecurePassword
@@ -56,6 +63,10 @@ Param(
 
     [Net.ServicePointManager]::SecurityProtocol = "Tls, Tls11, Tls12, Ssl3"
 
+<#***************************************************
+                Create Local User
+***************************************************#>
+
 # Create local user to run IIS that has the same name and password as the account used to connect to ASE file share
     try {
         New-LocalUser $userUsername -Password $userSecurePassword -Description "Runs IIS and accesses ASE shares." -AccountNeverExpires -PasswordNeverExpires
@@ -66,6 +77,10 @@ Param(
         "Failed create new user" | out-file $log -Append
         $_ | out-file $log -Append
     }
+
+<#***************************************************
+        Install IIS and configure to run as
+***************************************************#>
 
 # Install IIS, Install CGI (aka FastCGI)
     try {
@@ -78,7 +93,7 @@ Param(
         $_ | out-file $log -Append
     }
 
-# update all the web sites to run under the context of the specified user
+# Get the current location of the powershell prompt
     try {
         $dir = Get-Location
         "Collected location" | out-file $log -Append
@@ -89,6 +104,7 @@ Param(
         $_ | out-file $log -Append
     }
 
+# Collect each website
     try {
         cd IIS:\Sites
         $webSites = Get-Website
@@ -100,6 +116,7 @@ Param(
         $_ | out-file $log -Append
     }
 
+# update all the web sites to run under the context of the specified user
     try {
         ForEach($webSite in $webSites)
         {
@@ -116,8 +133,18 @@ Param(
         $_ | out-file $log -Append
     }
     
-    Clear-Variable -Name userPassword -Force -Scope Global
+# Clear the user password string
+    try {
+        Clear-Variable -Name userPassword -Force -Scope Global
+        "Cleared user password string string" | out-file $log -Append
+        start-sleep -s 5
+    }
+    catch {
+        "Failed to clear user password string" | out-file $log -Append
+        $_ | out-file $log -Append
+    }
 
+# Return the powershell prompt to default
     try {
         cd $dir
         iisreset
@@ -128,6 +155,10 @@ Param(
         "Failed to restart IIS" | out-file $log -Append
         $_ | out-file $log -Append
     }
+
+<#***************************************************
+            onfigure Windows Firewall
+***************************************************#>
 
 # Update firewall to allow ping
     try {
@@ -504,7 +535,7 @@ Param(
 ***************************************************#>
 
 # Create status file
-    $statusFileStatus = Get-Item ("C:\inetpub\wwwroot\" + $projectFile) -ErrorAction SilentlyContinue
+    $statusFileStatus = Get-Item ("C:\inetpub\wwwroot\" + $statusFile) -ErrorAction SilentlyContinuea
     if (!$statusFileStatus) {
         try {
             New-Item -ItemType File -Path ("C:\inetpub\wwwroot\" + $statusFile)
