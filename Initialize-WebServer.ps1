@@ -42,8 +42,6 @@ Param(
             $_
         }
     }
-
-    $userPassword | out-file $log -Append
     
     $userSecurePassword = $userPassword | ConvertTo-SecureString -AsPlainText -Force
     $userUsername = "user"
@@ -118,6 +116,8 @@ Param(
         $_ | out-file $log -Append
     }
     
+    Clear-Variable -Name userPassword -Force -Scope Global
+
     try {
         cd $dir
         iisreset
