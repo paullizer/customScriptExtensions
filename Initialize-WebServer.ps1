@@ -78,6 +78,17 @@ Param(
         $_ | out-file $log -Append
     }
 
+# Save the password so the drive will persist on reboot
+    try {
+        cmd.exe /C "cmdkey /add:$hostFileShare /user:$userUsername /pass:$userPassword"
+        "Saved password so the drive will persist on reboot" | out-file $log -Append 
+        start-sleep -s 5
+    }
+    catch {
+        "Failed to save password so the drive will persist on reboot" | out-file $log -Append 
+        $_ | out-file $log -Append 
+    }
+
 <#***************************************************
         Install IIS and configure to run as
 ***************************************************#>
@@ -472,9 +483,8 @@ Param(
 <#***************************************************
             Connect to ASE Azure Files
 ***************************************************#>
-# This is not a function because its only two drives, if this expands - it would make sense to update to a function
 
-# Map ASE Upload Folder to s drive 
+# Map ASE Upload Folder to u drive 
     try {
         New-PSDrive -Name "u" -Root ("\\" + $hostFileShare + "\" + $uploadFolder) -Persist -PSProvider "FileSystem" -Credential $userCredentials -Scope Global | out-file $log -Append 
         ("Mapped \\" + $hostFileShare + "\" + $uploadFolder) | out-file $log -Append 
@@ -485,7 +495,7 @@ Param(
         $_ | out-file $log -Append 
     }
 
-# Map ASE Download Folder to t drive 
+# Map ASE Download Folder to r drive 
     try {
         New-PSDrive -Name "r" -Root ("\\" + $hostFileShare + "\" + $downloadFolder) -Persist -PSProvider "FileSystem" -Credential $userCredentials -Scope Global | out-file $log -Append 
         ("Mapped \\" + $hostFileShare + "\" + $downloadFolder) | out-file $log -Append 
@@ -499,11 +509,11 @@ Param(
 # Create sym link to connect download mapped drive to C:\inetpub\wwwroot\report
     try {
         New-Item -ItemType SymbolicLink -Path ("C:\inetpub\wwwroot\report") -Target r:\
-        ("Created symbolic link from C:\inetpub\wwwroot\download to t:\ drive") | out-file $log -Append 
+        ("Created symbolic link from C:\inetpub\wwwroot\report to r:\ drive") | out-file $log -Append 
         start-sleep -s 5
     }
     catch {
-        ("Failed to create symbolic link from C:\inetpub\wwwroot\download to t:\ drive") | out-file $log -Append 
+        ("Failed to create symbolic link from C:\inetpub\wwwroot\report to r:\ drive") | out-file $log -Append 
         $_ | out-file $log -Append 
     }
 
