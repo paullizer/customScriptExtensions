@@ -497,7 +497,7 @@ Param(
 
 # Map ASE Upload Folder to u drive 
     try {
-        New-PSDrive -Name "u" -Root ("\\" + $hostFileShare + "\" + $uploadFolder) -Persist -PSProvider "FileSystem" -Credential $userCredentials -Scope Global | out-file $log -Append 
+        New-PSDrive -Name U -PSProvider FileSystem -Root ("\\" + $hostFileShare + "\" + $uploadFolder) -Persist
         ("Mapped \\" + $hostFileShare + "\" + $uploadFolder) | out-file $log -Append 
         start-sleep -s 5
     }
@@ -508,7 +508,7 @@ Param(
 
 # Map ASE Download Folder to r drive 
     try {
-        New-PSDrive -Name "r" -Root ("\\" + $hostFileShare + "\" + $downloadFolder) -Persist -PSProvider "FileSystem" -Credential $userCredentials -Scope Global | out-file $log -Append 
+        New-PSDrive -Name R -PSProvider FileSystem -Root ("\\" + $hostFileShare + "\" + $downloadFolder) -Persist
         ("Mapped \\" + $hostFileShare + "\" + $downloadFolder) | out-file $log -Append 
         start-sleep -s 5
     }
@@ -519,7 +519,7 @@ Param(
 
 # Create sym link to connect download mapped drive to C:\inetpub\wwwroot\report
     try {
-        New-Item -ItemType SymbolicLink -Path ("C:\inetpub\wwwroot\report") -Target r:\
+        New-Item -ItemType SymbolicLink -Path ("C:\inetpub\wwwroot\report") -Target R:\
         ("Created symbolic link from C:\inetpub\wwwroot\report to r:\ drive") | out-file $log -Append 
         start-sleep -s 5
     }
