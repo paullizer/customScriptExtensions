@@ -61,6 +61,17 @@ Param(
 
     [Net.ServicePointManager]::SecurityProtocol = "Tls, Tls11, Tls12, Ssl3"
 
+# Create local user to run IIS that has the same name and password as the account used to connect to ASE file share
+    try {
+        New-LocalUser $userUsername -Password $userSecurePassword -Description "Runs IIS and accesses ASE shares." -AccountNeverExpires -PasswordNeverExpires
+        "Created new user" | out-file $log -Append
+        start-sleep -s 5
+    }
+    catch {
+        "Failed create new user" | out-file $log -Append
+        $_ | out-file $log -Append
+    }
+
 # Install IIS, Install CGI (aka FastCGI)
     try {
         Install-WindowsFeature -name Web-Server, Web-CGI -IncludeManagementTools
@@ -69,6 +80,56 @@ Param(
     }
     catch {
         "Failed to install IIS and CGI" | out-file $log -Append
+        $_ | out-file $log -Append
+    }
+
+    
+# update all the web sites to run under the context of the specified user
+    try {
+        $dir = Get-Location
+        "Collected location" | out-file $log -Append
+        start-sleep -s 5
+    }
+    catch {
+        "Failed to collect location" | out-file $log -Append
+        $_ | out-file $log -Append
+    }
+
+    try {
+        cd IIS:\Sites
+        $webSites = Get-Website
+        "Collected websites" | out-file $log -Append
+        start-sleep -s 5
+    }
+    catch {
+        "Failed to collect websites" | out-file $log -Append
+        $_ | out-file $log -Append
+    }
+
+    try {
+        ForEach($webSite in $webSites)
+        {
+            $siteName = ($webSite | Select-Object -Property "Name").name
+            $fullPath = "system.applicationHost/sites/site[@name='$siteName']/application[@path='/']/virtualDirectory[@path='/']"
+            Set-WebConfigurationProperty $fullPath -Name "username" -Value $userUsername
+            Set-WebConfigurationProperty $fullPath -Name "password" -Value $userPassword
+        }
+        ("Updated username and password for website - " + $siteName) | out-file $log -Append
+        start-sleep -s 5
+    }
+    catch {
+        ("Failed to update username and password for website - " + $siteName) | out-file $log -Append
+        $_ | out-file $log -Append
+    }
+    
+    try {
+        cd $dir
+        iisreset
+        "Restarted IIS" | out-file $log -Append
+        start-sleep -s 5
+    }
+    catch {
+        "Failed to restart IIS" | out-file $log -Append
         $_ | out-file $log -Append
     }
 
@@ -369,7 +430,7 @@ Param(
 # Deploy website from Git Repo to C:\inetpub\wwwroot\
     try { 
         git config --global --add safe.directory C:/inetpub/wwwroot
-        cd C:\temp\git\
+        cd C:\inetpub\wwwroot\
         git init
         git remote add main https://github.com/TrainingExample/IncidentManagement.git
         git fetch
@@ -390,7 +451,7 @@ Param(
 
 # Map ASE Upload Folder to s drive 
     try {
-        New-PSDrive -Name "s" -Root ("\\" + $hostFileShare + "\" + $uploadFolder) -Persist -PSProvider "FileSystem" -Credential $userCredentials -Scope Global | out-file $log -Append 
+        New-PSDrive -Name "u" -Root ("\\" + $hostFileShare + "\" + $uploadFolder) -Persist -PSProvider "FileSystem" -Credential $userCredentials -Scope Global | out-file $log -Append 
         ("Mapped \\" + $hostFileShare + "\" + $uploadFolder) | out-file $log -Append 
         start-sleep -s 5
     }
@@ -413,7 +474,7 @@ Param(
 
 # Map ASE Download Folder to t drive 
     try {
-        New-PSDrive -Name "t" -Root ("\\" + $hostFileShare + "\" + $downloadFolder) -Persist -PSProvider "FileSystem" -Credential $userCredentials -Scope Global | out-file $log -Append 
+        New-PSDrive -Name "r" -Root ("\\" + $hostFileShare + "\" + $downloadFolder) -Persist -PSProvider "FileSystem" -Credential $userCredentials -Scope Global | out-file $log -Append 
         ("Mapped \\" + $hostFileShare + "\" + $downloadFolder) | out-file $log -Append 
         start-sleep -s 5
     }
@@ -422,9 +483,9 @@ Param(
         $_ | out-file $log -Append 
     }
 
-<# Create sym link to connect download mapped drive to C:\inetpub\wwwroot\upload
+# Create sym link to connect download mapped drive to C:\inetpub\wwwroot\report
     try {
-        New-Item -ItemType SymbolicLink -Path ("C:\inetpub\wwwroot\download") -Target t:\
+        New-Item -ItemType SymbolicLink -Path ("C:\inetpub\wwwroot\report") -Target r:\
         ("Created symbolic link from C:\inetpub\wwwroot\download to t:\ drive") | out-file $log -Append 
         start-sleep -s 5
     }
@@ -447,43 +508,48 @@ Param(
             start-sleep -s 5
         }
         catch {
+            ("Failed to create C:\inetpub\wwwroot\" + $projectFile) | out-file $log -Append 
             $_ | out-file $log -Append 
         }
     }
+
+# Get name of most recently edited subfolder witin the download folder and update project file to use
+    $downloadFolderList = Get-ChildItem -Directory -Path t:\
+    $downloadFolder = $downloadFolderList | Sort-Object -Property LastWriteTime
+    ("download/" + $downloadFolder[1].name) | Out-File ("C:\inetpub\wwwroot\" + $projectFile) -Encoding ascii
+
+
+<#***************************************************
+            Create Status File
+***************************************************#>
+
+# Create status file
+    $statusFileStatus = Get-Item ("C:\inetpub\wwwroot\" + $projectFile) -ErrorAction SilentlyContinue
+    if (!$statusFileStatus) {
+        try {
+            New-Item -ItemType File -Path ("C:\inetpub\wwwroot\" + $statusFile)
+            $statusInput | Out-File ("C:\inetpub\wwwroot\" + $statusFile) -Encoding ascii
+            ("Created C:\inetpub\wwwroot\" + $statusFile) | out-file $log -Append 
+            start-sleep -s 5
+        }
+        catch {
+            ("Failed to create C:\inetpub\wwwroot\" + $statusFile) | out-file $log -Append 
+            $_ | out-file $log -Append 
+        }
+    }
+
+
 
 <#***************************************************
         Update file and folder permissions
 ***************************************************#>
     
-<# Update permissions on upload folder for BUILT-IN\Users
-try {
-    $ACL = Get-ACL -Path ("C:\inetpub\wwwroot\" + $uploadFolder)
-    $AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("Users","Modify","Allow")
-    $ACL.SetAccessRule($AccessRule)
-    $ACL | Set-Acl -Path ("C:\inetpub\wwwroot\" + $uploadFolder)
-    ("Updated permissions on upload folder for BUILT-IN\Users on " + $uploadFolder) | out-file $log -Append 
-    start-sleep -s 5
-}
-catch {
-    $_ | out-file $log -Append 
-}
+# Update permissions on upload folder for BUILT-IN\Users
+
 
 # Update permissions on upload folder for BUILT-IN\IIS_IUSRS
-try {
-    $ACL = Get-ACL -Path ("C:\inetpub\wwwroot\" + $uploadFolder)
-    $AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("IIS_IUSRS","Modify","Allow")
-    $ACL.SetAccessRule($AccessRule)
-    $ACL | Set-Acl -Path ("C:\inetpub\wwwroot\" + $uploadFolder)
-    ("Updated permissions on upload folder for BUILT-IN\IIS_IUSRS on " + $uploadFolder) | out-file $log -Append 
-}
-catch {
-    $_ | out-file $log -Append 
-}
 
-# Get name of most recently edited subfolder witin the download folder and update project file to use
-    $downloadFolderList = Get-ChildItem -Directory -Path t:\
-    $downloadFolder = $downloadFolderList | Sort-Object -Property LastWriteTime
-    ("download/" + $folderName) | Out-File ("C:\inetpub\wwwroot\" + $projectFile) -Encoding ascii
+
 
 # Update permissions on project file for BUILT-IN\Users
 try {
