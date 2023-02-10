@@ -29,10 +29,7 @@ Param(
         [string]$userPassword
 )
 
-    
-
     $log = "c:\temp\log.txt"
-
 
 # Create temp folder
     $temp = Get-Item "c:\temp" -ErrorAction SilentlyContinue
@@ -83,7 +80,6 @@ Param(
         $_ | out-file $log -Append
     }
 
-    
 # update all the web sites to run under the context of the specified user
     try {
         $dir = Get-Location
@@ -295,7 +291,6 @@ Param(
         $_ | out-file $log -Append 
     }
 
-
 <#***************************************************
             Configure IIS and PHP
 ***************************************************#>
@@ -448,7 +443,6 @@ Param(
 ***************************************************#>
 # This is not a function because its only two drives, if this expands - it would make sense to update to a function
 
-
 # Map ASE Upload Folder to s drive 
     try {
         New-PSDrive -Name "u" -Root ("\\" + $hostFileShare + "\" + $uploadFolder) -Persist -PSProvider "FileSystem" -Credential $userCredentials -Scope Global | out-file $log -Append 
@@ -459,18 +453,6 @@ Param(
         ("Failed to map \\" + $hostFileShare + "\" + $uploadFolder + ". ") | out-file $log -Append 
         $_ | out-file $log -Append 
     }
-
-<# Create sym link to connect upload mapped drive to C:\inetpub\wwwroot\upload
-    try {
-        New-Item -ItemType SymbolicLink -Path ("C:\inetpub\wwwroot\upload") -Target s:\
-        ("Created symbolic link from C:\inetpub\wwwroot\upload to s:\ drive") | out-file $log -Append 
-        start-sleep -s 5
-    }
-    catch {
-        ("Failed to create symbolic link from C:\inetpub\wwwroot\upload to s:\ drive") | out-file $log -Append 
-        $_ | out-file $log -Append 
-    }
-    #>
 
 # Map ASE Download Folder to t drive 
     try {
@@ -493,7 +475,6 @@ Param(
         ("Failed to create symbolic link from C:\inetpub\wwwroot\download to t:\ drive") | out-file $log -Append 
         $_ | out-file $log -Append 
     }
-    #>
 
 <#***************************************************
             Create Project File
@@ -518,7 +499,6 @@ Param(
     $downloadFolder = $downloadFolderList | Sort-Object -Property LastWriteTime
     ("download/" + $downloadFolder[1].name) | Out-File ("C:\inetpub\wwwroot\" + $projectFile) -Encoding ascii
 
-
 <#***************************************************
             Create Status File
 ***************************************************#>
@@ -538,18 +518,9 @@ Param(
         }
     }
 
-
-
 <#***************************************************
         Update file and folder permissions
 ***************************************************#>
-    
-# Update permissions on upload folder for BUILT-IN\Users
-
-
-# Update permissions on upload folder for BUILT-IN\IIS_IUSRS
-
-
 
 # Update permissions on project file for BUILT-IN\Users
 try {
@@ -575,4 +546,3 @@ try {
 catch {
     $_ | out-file $log -Append 
 }
-#>
