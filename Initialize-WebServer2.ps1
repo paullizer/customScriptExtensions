@@ -395,6 +395,17 @@ Param(
             Deploy & configure Web App
 ***************************************************#>
 
+# Create Git folder
+    $temp = Get-Item "c:\temp\Git" -ErrorAction SilentlyContinue
+    if (!$temp) {
+        try {
+            New-Item -ItemType Directory -Path "c:\temp\Git"
+            "Created c:\temp\Git" | out-file $log -Append 
+        }
+        catch {
+            $_ | out-file $log -Append 
+        }
+    }
 # Deploy website from Git Repo to C:\inetpub\wwwroot\
     try { 
         git config --global --add safe.directory C:/inetpub/wwwroot
@@ -410,14 +421,14 @@ Param(
         $_ | out-file $log -Append 
     }
 
-    try {
+    <#try {
         Copy-Item -Path "C:\temp\git\*" -Destination "C:\inetpub\wwwroot" -Recurse
         ("Copied git repo contents to C:\inetpub\wwwroot. ") | out-file $log -Append 
     }
     catch {
         ("Failed to git repo contents to C:\inetpub\wwwroot. ") | out-file $log -Append 
         $_ | out-file $log -Append 
-    }
+    }#>
 
 <#***************************************************
             Connect to ASE Azure Files
